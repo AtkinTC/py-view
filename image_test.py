@@ -7,7 +7,7 @@ def tup_hash(a): return
 file = "test1"
 ext = "jpg"
 im = Image.open(file + "." + ext)
-im.thumbnail((400,400))
+im.thumbnail((500,500))
 
 pixels = ImageOps.grayscale(im).load()
 width, height = im.size
@@ -17,42 +17,76 @@ for x in range(width):
     for y in range(height):
         cpixel = pixels[x, y]
         all_pixels.append(cpixel)
+        
+def mag(k):
+    return (abs((k[0]+2*k[1]+k[2]) - (k[6]+2*k[7]+k[8])) +
+            abs((k[2]+2*k[5]+k[8]) - (k[0]+2*k[3]+k[6])))
 
 mask = []
+image = []
 
-#diff = (10,10,10)
-diff = 10
 for x in range(width):
     for y in range(height):
         pos = x*height+y
         pixel = all_pixels[pos]
         sides = []
-        if x > 0:
-            sides.append(all_pixels[ (x-1)*height+y] )
-        if x < width - 1:
-            sides.append(all_pixels[ (x+1)*height+y] )
-        if y > 0:
-            sides.append(all_pixels[ x*height+(y-1)] )
-        if y < height - 1:
-            sides.append(all_pixels[ x*height+(y+1)] )
-        """   
+        
+        #pulling 3x3 grid around point
+
+        #[-1,-1]
         if x > 0 and y > 0:
             sides.append(all_pixels[ (x-1)*height+(y-1)] )
+        else:
+            sides.append(0)
+
+        #[-1,0]   
+        if x > 0:
+            sides.append(all_pixels[ (x-1)*height+y] )
+        else:
+            sides.append(0)
+
+        #[-1,+1]  
         if x > 0 and y < height - 1:
             sides.append(all_pixels[ (x-1)*height+(y+1)] )
+        else:
+            sides.append(0)
+
+        #[0,-1]
+        if y > 0:
+            sides.append(all_pixels[ x*height+(y-1)] )
+        else:
+            sides.append(0)
+
+        #[0,0]
+        sides.append(all_pixels[pos])
+
+        #[0,+1]
+        if y < height - 1:
+            sides.append(all_pixels[ x*height+(y+1)] )
+        else:
+            sides.append(0)
+
+        #[+1,-1]
         if x < width - 1 and y > 0:
             sides.append(all_pixels[ (x+1)*height+(y-1)] )
+        else:
+            sides.append(0)
+
+        #[+1,0]                       
+        if x < width - 1:
+            sides.append(all_pixels[ (x+1)*height+y] )
+        else:
+            sides.append(0)
+        
+        #[+1,+1]
         if x < width - 1 and y < height - 1:
             sides.append(all_pixels[ (x+1)*height+(y+1)] )
-        """
-        edge = 0
-        
-        for s in sides:
-            if abs(pixel[i] - s[i]) > diff:
-                edge = 1
-                break
+        else:
+            sides.append(0)
 
-        mask.append(edge)
+        magnitude = mag(sides)
+        image.append(magnitude)
+        mask.append(magnitude > 120)
 
 """
 [0,1,2,
@@ -200,14 +234,19 @@ print change
 
 draw = ImageDraw.Draw(im)
 
+draw.rectangle([0,0,width,height], fill=0)
+
 for x in range(width):
     for y in range(height):
         pos = x*height+y
+        
+        #draw.point((x,y),fill=(image[pos],image[pos],image[pos]))
+        
         #if mask[pos] == 1:
-        #    draw.point((x,y), fill=0)
-        #draw.rectangle([0,0,width,height], fill=0)
+        #    draw.point((x,y), fill=(255,255,255))
+        
         if mask2_t[pos] == 1:
-            draw.point((x,y), fill=(0,0,0))
+            draw.point((x,y), fill=(255,255,255))
 
 im.save(file + ".out." + ext)
 print 'done'
