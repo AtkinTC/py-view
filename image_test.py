@@ -1,4 +1,4 @@
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageOps
 
 def tup_add(a,b): return tuple(map(lambda x, y: x + y, a,b))
 def tup_sub(a,b): return tuple(map(lambda x, y: x - y, a,b))
@@ -9,7 +9,7 @@ ext = "jpg"
 im = Image.open(file + "." + ext)
 im.thumbnail((400,400))
 
-pixels = im.load()
+pixels = ImageOps.grayscale(im).load()
 width, height = im.size
 
 all_pixels = []
@@ -21,7 +21,7 @@ for x in range(width):
 mask = []
 
 #diff = (10,10,10)
-diff = 30
+diff = 10
 for x in range(width):
     for y in range(height):
         pos = x*height+y
@@ -48,14 +48,7 @@ for x in range(width):
         edge = 0
         
         for s in sides:
-            d = 0
-            for i in range(3):
-                #if s[i] < pixel[i] - diff[i] or s[i] > pixel[i] + diff[i]:
-                #    edge = 1
-                #    break
-                d += abs(pixel[i] - s[i])
-                
-            if d > diff:
+            if abs(pixel[i] - s[i]) > diff:
                 edge = 1
                 break
 
