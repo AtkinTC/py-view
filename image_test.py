@@ -14,10 +14,9 @@ width, height = im.size
 #        cpixel = pixels[x, y]
 #        all_pixels.append(cpixel)
         
-SOBEL = 1
-PREWITT = 2
 
-def edge(image, method = SOBEL):
+
+def extract(image, method = SOBEL):
   pixels = ImageOps.grayscale(image).load()
   width, height = im.size
 
@@ -27,9 +26,12 @@ def edge(image, method = SOBEL):
       cpixel = pixels[x, y]
       pix_list.append(cpixel)
 
-  return edge_d(pix_list, width, height, method)
+  return pix_list, width, height
 
-def edge_d(pix_l, w, h, method = SOBEL):
+SOBEL = 1
+PREWITT = 2
+
+def edge(pix_l, w, h, method = SOBEL):
   kernel_x = []
   kernel_y = []
 
@@ -54,7 +56,31 @@ def edge_d(pix_l, w, h, method = SOBEL):
           
       grayscale_out.append(int(mag))
   
-  return graysclae_out
+  return grayscale_out
+
+def gaussian(pix_l, w, h, s, p):
+  k = int((s-1)/2)
+  grid = []
+  for i in range(1,s+1):
+    for j in range(1,s+1):
+      n = math.exp(-(pow(i-k-1,2)+pow(j-k-1,2))/(2.0*pow(p,2)))
+      #n = math.exp(-(pow(i-k-1,2)+pow(j-k-1,2)))#/(2.0*pow(p,2)))
+      d = 2.0*3.141592*pow(p,2)
+      grid.append(n/d)
+
+  s = sum(grid)
+  filt = map(lambda a: a/s, grid)
+  
+  grayscale_out = []
+  for x in range(w):
+    for y in range(h):
+      sides = get_grid(5,pix_l,x,y,w,h)
+  
+      mag = sum(map(lambda a,b: a*b, sides, filt))
+  
+      grayscale_out.append(int(mag))
+  
+  return grayscale_out
 
 def threshold(pix_l, thresh):
   return map(lambda a: a >= thresh, pix_l)
@@ -211,7 +237,10 @@ while notdone:
 print change
 """
 
-layer = edge(im)
+pix_l, w, h = extract(im)
+
+pix_l = gaussian(pix_l,w,h,5,1.3)
+layer = edge(pix_l, w, h)
 
 draw = ImageDraw.Draw(im)
 
