@@ -121,126 +121,58 @@ def token_rot(token, deg):
 #compares the base to all rotations of the token
 def token_comp(base, token):
     
-    for i in range(4):
-        base_r = token_rot(base,i)
-        match = True
-        for i in range(9):
-            if token[i] >= 0 and token[i] != base_r[i]:
-                match = False
-                break
-        if match == True:
-            break
-    return match
+  for i in range(4):
+    base_r = token_rot(base,i)
+    match = True
+    for i in range(9):
+      if token[i] >= 0 and token[i] != base_r[i]:
+        match = False
+        break
+    if match == True:
+      break
+  return match
 
-"""
-mask1 = mask
-mask2 = mask
+def thin(pix_l,w,h):
+	change = 0
+	notdone = True
+	mask = map(lambda a: int(a > 0 and 1), pix_l)
+	while notdone:
+		change_t = 0
+		notdone = False
+		for x in range(w):
+			for y in range(h):
+				if mask[x*h+y] == 1
+					sides = get_grid(3,mask,x,y,w,h)
 
+					token1 = [0,0,0,-1,1,-1,1,1,1]
+					token2 = [-1,0,0,1,1,0,-1,1,-1]
 
-change = 0
+					match = token_comp(sides, token1)
+					if not match:
+						match = token_comp(sides, token2)
+				else:
+					match = 0
+					
+				
 
-notdone = True
+				change_t += match
 
-mask2_t = mask2
+				if match:
+					mask[x*height+y] = 0
+				
+				if match > notdone: notdone = match
+				change_t += match
+		change += change_t
+		#print change, '; ', change_t
 
-while notdone:
-    change_t = 0
-    notdone = False
-    #mask2_t = mask2
-    #mask2 = []
-    for x in range(width):
-        for y in range(height):
-            pos = x*height+y
-            pixel = mask2_t[pos]
-            sides = []
-
-            if pixel == 1:
-
-                #pulling 3x3 grid around point
-
-                #[-1,-1]
-                if x > 0 and y > 0:
-                    sides.append(mask2_t[ (x-1)*height+(y-1)] )
-                else:
-                    sides.append(0)
-
-                #[-1,0]   
-                if x > 0:
-                    sides.append(mask2_t[ (x-1)*height+y] )
-                else:
-                    sides.append(0)
-
-                #[-1,+1]  
-                if x > 0 and y < height - 1:
-                    sides.append(mask2_t[ (x-1)*height+(y+1)] )
-                else:
-                    sides.append(0)
-
-                #[0,-1]
-                if y > 0:
-                    sides.append(mask2_t[ x*height+(y-1)] )
-                else:
-                    sides.append(0)
-
-                #[0,0]
-                sides.append(1)
-
-                #[0,+1]
-                if y < height - 1:
-                    sides.append(mask2_t[ x*height+(y+1)] )
-                else:
-                    sides.append(0)
-
-                #[+1,-1]
-                if x < width - 1 and y > 0:
-                    sides.append(mask2_t[ (x+1)*height+(y-1)] )
-                else:
-                    sides.append(0)
-
-                #[+1,0]                       
-                if x < width - 1:
-                    sides.append(mask2_t[ (x+1)*height+y] )
-                else:
-                    sides.append(0)
-                
-                #[+1,+1]
-                if x < width - 1 and y < height - 1:
-                    sides.append(mask2_t[ (x+1)*height+(y+1)] )
-                else:
-                    sides.append(0)
-
-                token1 = [0,0,0,-1,1,-1,1,1,1]
-                token2 = [-1,0,0,1,1,0,-1,1,-1]
-
-                match = token_comp(sides, token1)
-                if not match:
-                    match = token_comp(sides, token2)
-            else:
-                match = 0
-                
-            
-
-            change_t += match
-
-            if match:
-                mask2_t[pos] = 0
-            else:
-                mask2_t[pos] = pixel
-            
-            if match > notdone: notdone = match
-
-    change += change_t
-    print change, '; ', change_t
-
-    
-            
-print change
-"""
+	return map(lambda a: a > 0 and 255, mask)
 
 pix_l, w, h = extract(im)
 
-pix_l = gaussian(pix_l,w,h,5,1.3)
+layer = gaussian(pix_l,w,h,5,1.3)
 layer = edge(pix_l, w, h)
+layer = threshold(layer,80)
+layer = thin(layer,w,h)
 
 draw = ImageDraw.Draw(im)
 
@@ -250,12 +182,6 @@ for x in range(width):
     pos = x*height+y
     
     draw.point((x,y),fill=(image[pos],image[pos],image[pos]))
-    
-    #if mask[pos] == 1:
-    #    draw.point((x,y), fill=(255,255,255))
-    
-    #if mask2_t[pos] == 1:
-    #    draw.point((x,y), fill=(255,255,255))
 
 im.save(file + ".out." + ext)
 print 'done'
