@@ -14,31 +14,56 @@ width, height = im.size
 #        cpixel = pixels[x, y]
 #        all_pixels.append(cpixel)
         
+SOBEL = 1
+PREWITT = 2
 
-mask = []
-image = []
+def edge(image, method = SOBEL):
+  pixels = ImageOps.grayscale(image).load()
+  width, height = im.size
 
-kernel_x = [-1,0,1,-2,0,2,-1,0,1]
-kernel_y = [1,2,1,0,0,0,-1,-2,-1]
-
-for x in range(width):
+  pix_list = []
+  for x in range(width):
     for y in range(height):
+      cpixel = pixels[x, y]
+      pix_list.append(cpixel)
 
-        sides = get_grid(3,all_pixels, x,y, width, height)
+  return edge_d(pix_list, width, height, method)
+
+def edge_d(pix_l, w, h, method = SOBEL):
+  kernel_x = []
+  kernel_y = []
+
+  if method==SOBEL:
+    #Sobel
+    kernel_x = [-1,0,1,-2,0,2,-1,0,1]
+    kernel_y = [1,2,1,0,0,0,-1,-2,-1]
+  elif method==PREWITT:
+    #Prewitt
+    kernel_x = [-1,0,1,-1,0,1,-1,0,1]
+    kernel_y = [1,1,1,0,0,0,-1,-1,-1]
         
-        magx = sum(map(lambda a,b: a*b, sides, kernel_x))
-        magy = sum(map(lambda a,b: a*b, sides, kernel_y))
+  grayscale_out = []
+  for x in range(w):
+    for y in range(h):
+      sides = get_grid(3,all_pixels, x,y, w, h)
+      
+      magx = sum(map(lambda a,b: a*b, sides, kernel_x))
+      magy = sum(map(lambda a,b: a*b, sides, kernel_y))
 
-        mag = pow(pow(magx,2) + pow(magy,2), 0.5)
-            
-        image.append(int(mag))
-        mask.append(magnitude > 120)
+      mag = pow(pow(magx,2) + pow(magy,2), 0.5)
+          
+      grayscale_out.append(int(mag))
+  
+  return graysclae_out
+
+def threshold(pix_l, thresh):
+  return map(lambda a: a >= thresh, pix_l)
 
 def get_grid(size, pix_l, x, y, w, h):
-    get = lambda x,y: int(x>=0 and x<w and y>=0 and y<h and pix_l[x*h+y])
-    r = int((size - 1) / 2)
-    grid = [get(xi,yi) for xi in range(x-r,x+r+1) for yi in range(y-r,y+r+1)]
-    return grid
+  get = lambda x,y: int(x>=0 and x<w and y>=0 and y<h and pix_l[x*h+y])
+  r = int((size - 1) / 2)
+  grid = [get(xi,yi) for xi in range(x-r,x+r+1) for yi in range(y-r,y+r+1)]
+  return grid
 
 """
 [0,1,2,
@@ -81,6 +106,7 @@ def token_comp(base, token):
             break
     return match
 
+"""
 mask1 = mask
 mask2 = mask
 
@@ -183,22 +209,24 @@ while notdone:
     
             
 print change
+"""
+
+layer = edge(im)
 
 draw = ImageDraw.Draw(im)
 
-draw.rectangle([0,0,width,height], fill=0)
-
+#draw.rectangle([0,0,width,height], fill=0)
 for x in range(width):
-    for y in range(height):
-        pos = x*height+y
-        
-        #draw.point((x,y),fill=(image[pos],image[pos],image[pos]))
-        
-        #if mask[pos] == 1:
-        #    draw.point((x,y), fill=(255,255,255))
-        
-        if mask2_t[pos] == 1:
-            draw.point((x,y), fill=(255,255,255))
+  for y in range(height):
+    pos = x*height+y
+    
+    draw.point((x,y),fill=(image[pos],image[pos],image[pos]))
+    
+    #if mask[pos] == 1:
+    #    draw.point((x,y), fill=(255,255,255))
+    
+    #if mask2_t[pos] == 1:
+    #    draw.point((x,y), fill=(255,255,255))
 
 im.save(file + ".out." + ext)
 print 'done'
