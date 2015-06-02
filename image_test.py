@@ -1,92 +1,44 @@
 from PIL import Image, ImageDraw, ImageOps
 
-def tup_add(a,b): return tuple(map(lambda x, y: x + y, a,b))
-def tup_sub(a,b): return tuple(map(lambda x, y: x - y, a,b))
-def tup_hash(a): return 
-
 file = "test1"
 ext = "jpg"
 im = Image.open(file + "." + ext)
 im.thumbnail((500,500))
 
-pixels = ImageOps.grayscale(im).load()
+#pixels = ImageOps.grayscale(im).load()
 width, height = im.size
 
-all_pixels = []
-for x in range(width):
-    for y in range(height):
-        cpixel = pixels[x, y]
-        all_pixels.append(cpixel)
+#all_pixels = []
+#for x in range(width):
+#    for y in range(height):
+#        cpixel = pixels[x, y]
+#        all_pixels.append(cpixel)
         
-def mag(k):
-    return (abs((k[0]+2*k[1]+k[2]) - (k[6]+2*k[7]+k[8])) +
-            abs((k[2]+2*k[5]+k[8]) - (k[0]+2*k[3]+k[6])))
 
 mask = []
 image = []
 
+kernel_x = [-1,0,1,-2,0,2,-1,0,1]
+kernel_y = [1,2,1,0,0,0,-1,-2,-1]
+
 for x in range(width):
     for y in range(height):
-        pos = x*height+y
-        pixel = all_pixels[pos]
-        sides = []
+
+        sides = get_grid(3,all_pixels, x,y, width, height)
         
-        #pulling 3x3 grid around point
+        magx = sum(map(lambda a,b: a*b, sides, kernel_x))
+        magy = sum(map(lambda a,b: a*b, sides, kernel_y))
 
-        #[-1,-1]
-        if x > 0 and y > 0:
-            sides.append(all_pixels[ (x-1)*height+(y-1)] )
-        else:
-            sides.append(0)
-
-        #[-1,0]   
-        if x > 0:
-            sides.append(all_pixels[ (x-1)*height+y] )
-        else:
-            sides.append(0)
-
-        #[-1,+1]  
-        if x > 0 and y < height - 1:
-            sides.append(all_pixels[ (x-1)*height+(y+1)] )
-        else:
-            sides.append(0)
-
-        #[0,-1]
-        if y > 0:
-            sides.append(all_pixels[ x*height+(y-1)] )
-        else:
-            sides.append(0)
-
-        #[0,0]
-        sides.append(all_pixels[pos])
-
-        #[0,+1]
-        if y < height - 1:
-            sides.append(all_pixels[ x*height+(y+1)] )
-        else:
-            sides.append(0)
-
-        #[+1,-1]
-        if x < width - 1 and y > 0:
-            sides.append(all_pixels[ (x+1)*height+(y-1)] )
-        else:
-            sides.append(0)
-
-        #[+1,0]                       
-        if x < width - 1:
-            sides.append(all_pixels[ (x+1)*height+y] )
-        else:
-            sides.append(0)
-        
-        #[+1,+1]
-        if x < width - 1 and y < height - 1:
-            sides.append(all_pixels[ (x+1)*height+(y+1)] )
-        else:
-            sides.append(0)
-
-        magnitude = mag(sides)
-        image.append(magnitude)
+        mag = pow(pow(magx,2) + pow(magy,2), 0.5)
+            
+        image.append(int(mag))
         mask.append(magnitude > 120)
+
+def get_grid(size, pix_l, x, y, w, h):
+    get = lambda x,y: int(x>=0 and x<w and y>=0 and y<h and pix_l[x*h+y])
+    r = int((size - 1) / 2)
+    grid = [get(xi,yi) for xi in range(x-r,x+r+1) for yi in range(y-r,y+r+1)]
+    return grid
 
 """
 [0,1,2,
