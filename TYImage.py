@@ -1,22 +1,19 @@
 from PIL import Image, ImageDraw, ImageOps
 
-file = "test1"
-ext = "jpg"
-im = Image.open(file + "." + ext)
-im.thumbnail((500,500))
+file = ''
+ext = ''
+width = 0
+height = 0
 
-#pixels = ImageOps.grayscale(im).load()
-width, height = im.size
+def load(file_name):
+    global file, ext, width, height
+    (file, ext) = file_name.rsplit('.', 1)
 
-#all_pixels = []
-#for x in range(width):
-#    for y in range(height):
-#        cpixel = pixels[x, y]
-#        all_pixels.append(cpixel)
+    im = Image.open(file_name)
+    width, height = im.size
+    return im
         
-
-
-def extract(image, method = SOBEL):
+def extract_gray(image):
   pixels = ImageOps.grayscale(image).load()
   width, height = im.size
 
@@ -30,13 +27,12 @@ def extract(image, method = SOBEL):
 
 SOBEL = 1
 PREWITT = 2
-CANNY = 3
 
 def edge(pix_l, w, h, method = SOBEL):
   kernel_x = []
   kernel_y = []
 
-  if method==SOBEL or method==CANNY:
+  if method==SOBEL:
     #Sobel
     kernel_x = [-1,0,1,-2,0,2,-1,0,1]
     kernel_y = [1,2,1,0,0,0,-1,-2,-1]
@@ -46,62 +42,109 @@ def edge(pix_l, w, h, method = SOBEL):
     kernel_y = [1,1,1,0,0,0,-1,-1,-1]
         
   magnitude = []
-  if method==CANNY:
-  	angle = []
+  #magnitude_x = []
+  #magnitude_y = []
+    
   for x in range(w):
     for y in range(h):
       sides = get_grid(3,all_pixels, x,y, w, h)
       
       magx = sum(map(lambda a,b: a*b, sides, kernel_x))
       magy = sum(map(lambda a,b: a*b, sides, kernel_y))
+      mag = pow(pow(magx,2) + pow(magy,2), 0.5)
+      
+      #magnitude_x.append(magx)
+      #magnitude_y.append(magy)
+      magnitude.append(mag)
+      
+  return map(int,magnitude)
+
+def canny(pix_l, w, h):
+	kernel_x = [-1,0,1,-2,0,2,-1,0,1]
+	kernel_y = [1,2,1,0,0,0,-1,-2,-1]
+	
+	magnitude = []
+	#magnitude_x = []
+	#magnitude_y = []
+	angle = []
+    
+	for x in range(w):
+    for y in range(h):
+      sides = get_grid(3, pix_l, x, y, w, h)
+
+      magx = sum(map(lambda a,b: a*b, sides, kernel_x))
+      magy = sum(map(lambda a,b: a*b, sides, kernel_y))
 
       mag = pow(pow(magx,2) + pow(magy,2), 0.5)
       
-      magnitude.append(mag)
+      #magnitude_x.append(magx)
+      #magnitude_y.append(magy)
       
-      if method==CANNY:
-        def direction(x,y):
-          r = math.atan2(x,y)
-          if r < 0:
-            r = 2*math.pi + r
-          r = r/(2*math.pi)
-          return r
-        angle.append(direction(magx,magy))
-        
-  if method==CANNY:
-    d = [0.0,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1.0]
-    mag2 = magnitude
-    for x in range(w):
-      for y in range(h):
-        r = angle[x*h+y]
-        diff = 2.0
-        close = 2.0
-        for n in d:
-          diff_t = abs(n - r)
-          if diff_t < diff:
-            diff = diff_t
-            close = n
+      magnitude.append(mag)
 
-        get = lambda x,y: int(x>=0 and x<w and y>=0 and y<h and magnitude[x*h+y])
-        
-        #N-S gradient
-        if close == 0.0 or close == 0.5 or close == 1.0:
-          sides = [get(x-1,y), get(x+1,y)]
-        #E-W gradient
-        elif close == 0.25 or close == 0.75:
-          sides = [get(x,y-1), get(x,y+1)]
-        #NW-SE gradient
-        elif close == 0.125 or close == 0.625:
-          sides = [get(x+1,y-1), get(x-1,y+1)]
-        #NE-SW gradient
-        elif close == 0.375 or close == 0.875:
-          sides = [get(x-1,y-1), get(x+1,y+1)]
+      def direction(x,y):
+	      r = math.atan2(x,y)
+	      if r < 0:
+          r = 2*math.pi + r
+	      r = r/(2*math.pi)
+	      return r
+      angle.append(direction(magx,magy))
 
-        if magnitude[x*h+y] < sides[0] or magnitude[x*h+y] < sides[1]:
-          mag2[x*h+y] = 0
-  	magnitude = mag2
-  	
-  return map(int,magnitude)
+  d = [0.0,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1.0]
+  mag2 = magnitude
+  for x in range(w):
+    for y in range(h):
+      r = angle[x*h+y]
+      diff = 2.0
+      close = 2.0
+      for n in d:
+        diff_t = abs(n - r)
+        if diff_t < diff:
+          diff = diff_t
+          close = n
+
+      get = lambda x,y: int(x>=0 and x<w and y>=0 and y<h and magnitude[x*h+y])
+      
+      #N-S gradient
+      if close == 0.0 or close == 0.5 or close == 1.0:
+        sides = [get(x-1,y), get(x+1,y)]
+      #E-W gradient
+      elif close == 0.25 or close == 0.75:
+        sides = [get(x,y-1), get(x,y+1)]
+      #NW-SE gradient
+      elif close == 0.125 or close == 0.625:
+        sides = [get(x+1,y-1), get(x-1,y+1)]
+      #NE-SW gradient
+      elif close == 0.375 or close == 0.875:
+        sides = [get(x-1,y-1), get(x+1,y+1)]
+
+      if magnitude[x*h+y] < sides[0] or magnitude[x*h+y] < sides[1]:
+        mag2[x*h+y] = 0
+	magnitude = mag2
+
+	return map(int, magnitude)
+	#return map(int,magnitude_x), map(int,magnitude_y)
+
+def emboss(pix_l, w, h):
+  kernel_x = [-1,0,1,-2,0,2,-1,0,1]
+  kernel_y = [1,2,1,0,0,0,-1,-2,-1]
+
+  magnitude_x = []
+  magnitude_y = []
+  
+  for x in range(w):
+    for y in range(h):
+      sides = get_grid(3, pix_l, x, y, w, h)
+
+      magx = sum(map(lambda a,b: a*b, sides, kernel_x))
+      magy = sum(map(lambda a,b: a*b, sides, kernel_y))
+
+      mag = pow(pow(magx,2) + pow(magy,2), 0.5)
+      
+      magnitude_x.append(magx)
+      magnitude_y.append(magy)
+
+  return map(int,magnitude_x), map(int,magnitude_y)	
 
 def gaussian(pix_l, w, h, s, p):
   k = int((s-1)/2)
@@ -212,24 +255,16 @@ def thin(pix_l,w,h):
 
 	return map(lambda a: a > 0 and 255, mask)
 
-pix_l, w, h = extract(im)
+def draw(rgb, im):
+	drawing = ImageDraw.Draw(im)
+	for x in range(width):
+		for y in range(height):
+			pos = x*height+y
+			drawing.point((x,y),fill=rgb[pos])
 
-layer = gaussian(pix_l,w,h,5,1.3)
-layer = edge(pix_l, w, h, CANNY)
-layer = threshold(layer,200)
-layer = thin(layer,w,h)
-
-draw = ImageDraw.Draw(im)
-
-#draw.rectangle([0,0,width,height], fill=0)
-for x in range(width):
-  for y in range(height):
-    pos = x*height+y
-    
-    draw.point((x,y),fill=(image[pos],image[pos],image[pos]))
-
-im.save(file + ".out." + ext)
-print 'done'
+def save(im):
+	im.save(file + ".out." + ext)
+	print 'done'
                 
 
         
